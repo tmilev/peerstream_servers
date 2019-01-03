@@ -1,2 +1,3 @@
 # peerstream_servers
-test peerstream
+
+Repository for solving peerstream challenges.
