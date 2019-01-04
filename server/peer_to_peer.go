@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
 	"strings"
 )
+
 
 
 func main() {
@@ -82,48 +82,5 @@ func closeServer(server *net.Listener) {
 	err := (*server).Close()
 	if err != nil {
 		fmt.Printf("Failed to close server. %v\n", err)
-	}
-}
-
-func closeConnection (connection net.Conn, numberOfSuccessfulConnections int64) {
-	err := connection.Close()
-	if err == nil {
-		fmt.Printf(
-			"Successfully closed connection %v\n",
-			numberOfSuccessfulConnections,
-		)
-	} else {
-		fmt.Printf(
-			"Failed to properly close connection %v. Error: %v\n",
-			numberOfSuccessfulConnections, err,
-		)
-	}
-}
-
-func handleConnection(connection net.Conn, numberOfSuccessfulConnections int64) {
-	defer closeConnection(connection, numberOfSuccessfulConnections)
-	buffer := make([]byte, 20000)
-	// Read the incoming connection into the buffer.
-	requestLength, err := connection.Read(buffer)
-	if err != nil {
-		fmt.Printf(
-			"Error reading connections %v. Error message: %v\n",
-			numberOfSuccessfulConnections,
-			err,
-		)
-		return
-	}
-	fmt.Printf(
-		"Received %v bytes on connection %v. ",
-		requestLength, numberOfSuccessfulConnections,
-	)
-	if requestLength < 100 {
-		bufferToShow := buffer[:requestLength]
-		fmt.Printf("Received bytes: %v\n", hex.EncodeToString(bufferToShow))
-		fmt.Printf("UTF8 encoding: %v\n", string(bufferToShow))
-	} else {
-		bufferToShow := buffer[:100]
-		fmt.Printf("Received bytes, utf8: %v ...\n", hex.EncodeToString(bufferToShow))
-		fmt.Printf("UTF8 encoding: %v\n", string(bufferToShow))
 	}
 }
