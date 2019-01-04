@@ -3,15 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/tmilev/peerstream_servers/backend_request"
 	"net"
 	"os"
 	"strings"
 )
 
-
-
 func main() {
-	startServer()
+	theServer.initializeAndStart()
 }
 
 func startServerOneAttempt(address string) *net.Listener {
@@ -27,42 +26,50 @@ func startServerOneAttempt(address string) *net.Listener {
 	return &server
 }
 
-func startServer() {
+func (server *Server) initializeAndStart() {
+	//server.numberOfPeerToPeerMessagesToKeep = 40
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Enter hostname:port. Example: 127.0.0.1:9000. Enter=auto ->")
 	addressRaw, _ := reader.ReadString('\n')
-	address := strings.Trim(addressRaw, ",\t\n ")
-	if len(address) < 3 {
-		address = "localhost:9000"
-
+	server.Address = strings.Trim(addressRaw, ",\t\n ")
+	if len(server.Address) < 3 {
+		server.Address = "localhost:9000"
 	}
-	fmt.Printf("About to connect to address: %v\n", address)
-	var server *net.Listener = nil
-	start := 8999
+	fmt.Printf("About to connect to address: %v\n", server.Address)
+	server.server = nil
+	start := 9000
 	for i:= start; i < 9011; i ++ {
 		if i > start {
-			address = fmt.Sprintf("localhost:%v", i)
+			server.Address = fmt.Sprintf("localhost:%v", i)
 			fmt.Printf(
 				"Attempting to start with auto-generated address: %v.\n",
-				address,
+				server.Address,
 			)
 		}
-		server = startServerOneAttempt(address)
-		if server != nil {
+		server.server = startServerOneAttempt(server.Address)
+		if server.server != nil {
 			break
 		}
 	}
-	if server == nil {
+	if server.server == nil {
 		fmt.Printf("Fatal error: could not start peer to peer server.\n")
 		return
 	}
-	defer closeServer(server)
-	fmt.Printf("Listening on %v.\n", address)
+	server.messageQueueCapacity = 100
+	server.messageQueue = make(chan backendRequest.BackendMessage, server.messageQueueCapacity)
+	server.start()
+}
+
+func (server *Server) start() {
+	go server.broadcastMessages()
+	defer server.close()
+	fmt.Printf("Listening on %v.\n", server.Address)
 	numberOfFailedAccepts := 0
 	var numberOfSuccessfulConnections int64 = 0
+
 	for {
 		// Listen for an incoming connection.
-		connection, err := (*server).Accept()
+		connection, err := (*server.server).Accept()
 		if err != nil {
 			numberOfFailedAccepts ++
 			fmt.Printf(
@@ -74,12 +81,35 @@ func startServer() {
 		}
 		// Handle connections in a new goroutine.
 		numberOfSuccessfulConnections ++
-		go handleConnection(connection, numberOfSuccessfulConnections)
+		go server.handleConnection(connection, numberOfSuccessfulConnections)
 	}
 }
 
-func closeServer(server *net.Listener) {
-	err := (*server).Close()
+func (server *Server) broadcastMessages() {
+	var currentMessage MessageWithResponse
+	for {
+		currentMessage.request = <-server.messageQueue
+		fmt.Printf("Message received: %v\n", currentMessage)
+		err := backendRequest.ConnectRequestReturn(&currentMessage.request, &currentMessage.result, nil)
+		if err != nil {
+			fmt.Printf("Error broadcasting message %v. %v\n", currentMessage, err)
+		}
+		// server.lastPeerToPeerMessagesSent is modified in this goroutine only: no need for locks.
+		//
+		//if server.numberOfPeerToPeerMessagesToKeep > 0 {
+		//	server.lastPeerToPeerMessagesSent = append(server.lastPeerToPeerMessagesSent, currentMessage)
+		//}
+		//numberOfMessages := len(server.lastPeerToPeerMessagesSent)
+		//if numberOfMessages > server.numberOfPeerToPeerMessagesToKeep {
+		//	start := numberOfMessages - server.numberOfPeerToPeerMessagesToKeep
+		//	server.lastPeerToPeerMessagesSent = server.lastPeerToPeerMessagesSent[start: numberOfMessages]
+		//}
+	}
+
+}
+
+func (server *Server) close() {
+	err := (*server.server).Close()
 	if err != nil {
 		fmt.Printf("Failed to close server. %v\n", err)
 	}

@@ -29,7 +29,7 @@ func requestBackend(writer http.ResponseWriter, request *http.Request) {
 		returnJSON(writer, result)
 		return
 	}
-	var parsedRequest backendRequest.BackendRequest
+	var parsedRequest backendRequest.BackendMessage
 	err = json.Unmarshal([]byte(command), &parsedRequest)
 	if err != nil {
 		result["error"] = fmt.Sprintf("Failed to parse your JSON query %v. Error: %v", command, err)

@@ -1,18 +1,42 @@
 <html>
   <script src = "/server_request.js"></script>
+  <link type = "text/css" rel = "stylesheet" href = "/style.css"/>
 <body>
 
-  Address: 
-<input id = "inputAddress" value = "localhost:9000">
-Key: 
-<input id = "inputKey" value = "key_0x00abcd">
-Value: 
-<input id = "inputValue" value = "value_1">
+<table>
+  <tr> 
+    <td>Address: </td> 
+    <td> <input id = "inputAddress" value = "localhost:9000"></td>
+  </tr> 
+  <tr> 
+  <td>      Key:
+    </td> 
+    <td>
+<input id = "inputKey" value = "key_1">
+</td>
+</tr>
+<tr>
+  <td>
+Value:
+</td> 
+<td>
 
+  <input id = "inputValue" value = "value_1">
+  </td>
+</tr>
+<tr>
+  <td>
+Suggest peer: 
+</td><td>
+<input id = "inputPeer" value = "localhost:9001">
+</td></tr>
+</table>
 <br>
-<button onclick = "getRequest('getAllKeys')">get all keys</button>
+<button class = "buttonStandard" onclick = "getRequest('getAllKeys')">get all keys</button>
+<button class = "buttonStandard" onclick = "getRequest('setKey')">set key</button>
+<button class = "buttonStandard" onclick = "getRequest('getPeers')">get all peers</button>
+<button class = "buttonStandard" onclick = "getRequest('addPeer')">add peer</button>
 <hr>
-<b>Output</b>
 <div id = "spanOutputFormatted">
 </div>
   
